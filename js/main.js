@@ -89,347 +89,192 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Projects Stack Initialization
     const projectsStack = document.querySelector('.projects-stack');
-    const projectCards = document.querySelectorAll('.project-card');
-    let activeCard = null;
-    let isSpread = false;
-    let isMobile = window.innerWidth <= 768;
-    let startX, startY, moveX, moveY;
-    let currentCardIndex = 0;
+    let projectCards = document.querySelectorAll('.project-card'); // Use let to allow reassignment
+    const prevProjectBtn = projectsStack.querySelector('.project-nav.prev');
+    const nextProjectBtn = projectsStack.querySelector('.project-nav.next');
+    let isProjectAnimating = false; // Renamed to avoid conflict
 
-    // Create pagination dots for mobile
-    function createPaginationDots() {
-        if (projectCards.length <= 1) return;
-        
-        const paginationContainer = document.createElement('div');
-        paginationContainer.className = 'card-pagination';
-        
-        projectCards.forEach((_, index) => {
-            const dot = document.createElement('div');
-            dot.className = 'card-pagination-dot';
-            if (index === 0) dot.classList.add('active');
-            
-            dot.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (isMobile && !isAnimating) {
-                    navigateToProjectCard(index);
-                }
+    function cycleCards(direction) {
+        if (isProjectAnimating) return;
+        isProjectAnimating = true;
+
+        projectCards = projectsStack.querySelectorAll('.project-card'); // Update node list
+        const cards = Array.from(projectCards);
+        const transitionDuration = 500; // ms, match CSS
+        const isMobile = window.innerWidth <= 768;
+
+        if (direction === 'next') {
+            if (cards.length < 2) { // Need at least 2 cards to cycle
+                isProjectAnimating = false;
+                return;
+            }
+            const firstCard = cards[0];
+
+            // Animate the top card flying off
+            firstCard.style.transition = `transform ${transitionDuration / 1000}s cubic-bezier(0.4, 0.0, 0.2, 1), opacity ${transitionDuration / 1000}s ease-out`;
+            // Adjust animation for mobile vs desktop
+            const flyOffTransform = isMobile
+                ? 'translateX(100%) translateY(10px) rotate(10deg) scale(0.85)' // Less horizontal, slight vertical
+                : 'translateX(150%) translateY(20px) rotate(15deg) scale(0.8)'; // Original desktop
+            firstCard.style.transform = flyOffTransform;
+            firstCard.style.opacity = '0';
+            firstCard.style.zIndex = '-1';
+
+            // Shift remaining cards up smoothly
+            cards.slice(1).forEach((card, index) => {
+                card.style.transition = `all ${transitionDuration / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`;
+                applyCardStyle(card, index, cards.length - 1);
             });
-            
-            paginationContainer.appendChild(dot);
-        });
-        
-        projectsStack.appendChild(paginationContainer);
-    }
 
-    // Navigate to a specific project card (for mobile)
-    function navigateToProjectCard(index) {
-        if (index === currentCardIndex || isAnimating) return;
-        
-        isAnimating = true;
-        
-        // Update the dots
-        const dots = document.querySelectorAll('.card-pagination-dot');
-        dots.forEach((dot, i) => {
-            dot.classList.toggle('active', i === index);
-        });
-        
-        // Handle the card navigation
-        const direction = index > currentCardIndex ? 1 : -1;
-        
-        // Animate cards out
-        projectCards.forEach((card, i) => {
-            if (i === currentCardIndex) {
-                card.style.transform = `translateX(${-direction * 100}%) scale(0.8)`;
-                card.style.opacity = '0';
-                card.style.zIndex = '1';
-            }
-        });
-        
-        setTimeout(() => {
-            // Reset all cards to their stacked position
-            resetCards(true);
-            
-            // Then set the new active card
-            currentCardIndex = index;
-            
-            // Bring the new current card to the front
-            projectCards.forEach((card, i) => {
-                if (i === currentCardIndex) {
-                    card.style.zIndex = projectCards.length + 1;
-                } else if (i > currentCardIndex) {
-                    // Cards after current should be stacked below
-                    card.style.zIndex = projectCards.length - (i - currentCardIndex);
-                } else {
-                    // Cards before current should be behind all others
-                    card.style.zIndex = i;
-                }
-            });
-            
-            isAnimating = false;
-        }, 300);
-    }
-
-    // Update mobile state on resize with debounce
-    let resizeTimer;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-            const wasMobile = isMobile;
-            isMobile = window.innerWidth <= 768;
-            
-            // Only react if mobile state actually changed
-            if (wasMobile !== isMobile) {
-                resetCards(isMobile);
-                
-                // Show/hide pagination based on mobile state
-                const pagination = document.querySelector('.card-pagination');
-                if (pagination) {
-                    pagination.style.display = isMobile ? 'flex' : 'none';
-                }
-            }
-        }, 250);
-    });
-
-    // Initialize cards with better mobile handling
-    projectCards.forEach((card, index) => {
-        // Set initial positions - cards stacked with slight offset
-        const translateX = isMobile ? 0 : [-2, 0, 2][index];
-        const translateY = isMobile ? (index * 10) : [-2, 0, 2][index];
-        const rotate = isMobile ? 0 : [-1, 0, 1][index];
-        
-        card.style.transform = `translate(${translateX}%, ${translateY}%) rotate(${rotate}deg)`;
-        card.style.zIndex = projectCards.length - index;
-        
-        // Add swipe handlers for mobile
-        card.addEventListener('touchstart', handleTouchStart, { passive: true });
-        card.addEventListener('touchmove', handleTouchMove, { passive: false });
-        card.addEventListener('touchend', handleTouchEnd);
-    });
-
-    // Touch handlers for swipe navigation
-    function handleTouchStart(e) {
-        if (activeCard) return;
-        
-        const touch = e.touches[0];
-        startX = touch.clientX;
-        startY = touch.clientY;
-        moveX = 0;
-        moveY = 0;
-    }
-    
-    function handleTouchMove(e) {
-        if (!startX || !startY || activeCard) return;
-        
-        const touch = e.touches[0];
-        moveX = touch.clientX - startX;
-        moveY = touch.clientY - startY;
-        
-        // Determine if horizontal swipe
-        if (Math.abs(moveX) > Math.abs(moveY) && Math.abs(moveX) > 30) {
-            e.preventDefault(); // Prevent scrolling during swipe
-        }
-    }
-    
-    function handleTouchEnd() {
-        if (!startX || !startY || activeCard || isAnimating) return;
-        
-        // If it's a significant horizontal swipe
-        if (Math.abs(moveX) > 50 && Math.abs(moveX) > Math.abs(moveY)) {
-            if (moveX > 0 && currentCardIndex > 0) {
-                // Swipe right - go to previous card
-                navigateToProjectCard(currentCardIndex - 1);
-            } else if (moveX < 0 && currentCardIndex < projectCards.length - 1) {
-                // Swipe left - go to next card
-                navigateToProjectCard(currentCardIndex + 1);
-            }
-        } else if (Math.abs(moveX) < 30 && Math.abs(moveY) < 30) {
-            // It's a tap/click - handle normally
-            handleProjectCardClick(projectCards[currentCardIndex]);
-        }
-        
-        // Reset values
-        startX = null;
-        startY = null;
-    }
-
-    // Add hover/touch effect on stack to spread cards
-    if ('ontouchstart' in window) {
-        projectsStack.addEventListener('touchstart', handleStackTouchStart);
-    } else {
-        projectsStack.addEventListener('mouseenter', () => {
-            if (!activeCard && !isMobile) {
-                spreadCards();
-            }
-        });
-
-        projectsStack.addEventListener('mouseleave', () => {
-            if (!activeCard && !isMobile) {
-                resetCards();
-            }
-        });
-    }
-
-    function handleStackTouchStart(e) {
-        if (!activeCard && isMobile && !isSpread) {
-            spreadCards();
-            
-            // Auto-collapse after a delay if no interaction
+            // After the animation completes
             setTimeout(() => {
-                if (isSpread && !activeCard) {
-                    resetCards(true);
-                }
-            }, 3000);
+                // Move the card element to the end of the stack in the DOM
+                projectsStack.appendChild(firstCard);
+
+                // Reset styles for the moved card (now last) without transition
+                firstCard.style.transition = 'none';
+                firstCard.style.opacity = '1';
+
+                // Update all card positions/styles based on the new order
+                updateProjectCards();
+
+                // Allow new animations after a short delay
+                setTimeout(() => {
+                    isProjectAnimating = false;
+                }, 50); // Small buffer
+
+            }, transitionDuration);
+
+        } else { // direction === 'prev'
+            if (cards.length < 2) { // Need at least 2 cards to cycle back
+                isProjectAnimating = false;
+                return;
+            }
+            const lastCard = cards[cards.length - 1];
+
+            // Instantly move the last card element to the beginning of the stack in the DOM
+            projectsStack.insertBefore(lastCard, cards[0]);
+
+            // Position the new first card off-screen (left/top) without transition, ready to animate in
+            lastCard.style.transition = 'none';
+            // Adjust animation for mobile vs desktop
+            const flyOnTransform = isMobile
+                ? 'translateX(-100%) translateY(10px) rotate(-10deg) scale(0.85)' // Less horizontal, slight vertical
+                : 'translateX(-150%) translateY(20px) rotate(-15deg) scale(0.8)'; // Original desktop
+            lastCard.style.transform = flyOnTransform;
+            lastCard.style.opacity = '0';
+            lastCard.style.zIndex = cards.length + 1; // Ensure it's on top initially
+
+            // Force reflow/repaint to apply the initial off-screen style before animating
+            void lastCard.offsetWidth;
+
+            // Update all card positions smoothly, animating the new first card into view
+            // and shifting others down. This applies the correct transitions and final styles.
+            updateProjectCards();
+
+            // Allow new animations after the transition duration
+            setTimeout(() => {
+                isProjectAnimating = false;
+            }, transitionDuration);
         }
     }
 
-    // Handle click/touch to bring card forward
-    projectCards.forEach(card => {
-        const handleInteraction = (e) => {
-            if (e.target.closest('.project-link')) return;
-            e.stopPropagation();
-            handleProjectCardClick(card);
-        };
+    // Helper function to apply styles based on index
+    function applyCardStyle(card, index, totalCards) {
+        const isMobile = window.innerWidth <= 768;
+        let transformStyle = '';
+        let opacity = 1;
+        const zIndex = totalCards - index;
 
-        card.addEventListener('click', handleInteraction);
-        card.addEventListener('touchend', (e) => {
-            if (e.target.closest('.project-link')) return;
-            if (Math.abs(moveX) < 30 && Math.abs(moveY) < 30) {
-                e.preventDefault();
-                handleInteraction(e);
-            }
-        });
-    });
-
-    function spreadCards() {
-        isSpread = true;
-        projectsStack.classList.add('is-spread');
-        
-        projectCards.forEach((card, index) => {
-            if (isMobile) {
-                // On mobile, spread cards vertically with more spacing and clearer separation
-                const spreadY = index * 60; // Increased vertical spacing
-                card.style.transform = `
-                    translate(0%, ${spreadY}px)
-                    rotate(0deg)
-                `;
-                // Add subtle scale effect for better depth perception
-                card.style.scale = 1 - (index * 0.03);
-            } else {
-                // Desktop spread animation
-                const spreadAngle = -20 + (index * 20);
-                const spreadX = -30 + (index * 30);
-                
-                card.style.transform = `
-                    translate(${spreadX}%, -5%)
-                    rotate(${spreadAngle}deg)
-                `;
-            }
-            // Ensure proper z-index
-            card.style.zIndex = projectCards.length - index;
-        });
-    }
-
-    function resetCards(forceMobile = false) {
-        isSpread = false;
-        projectsStack.classList.remove('is-spread');
-        projectsStack.classList.remove('has-active-card');
-        
-        projectCards.forEach((card, index) => {
-            if (isMobile || forceMobile) {
-                // Stack cards with more visible offset on mobile
-                const translateY = index * 10;
-                card.style.transform = `translate(0%, ${translateY}%) rotate(0deg)`;
-                
-                // Apply subtle scale for depth
-                if (index !== currentCardIndex) {
-                    card.style.scale = 1 - (index * 0.03);
-                } else {
-                    card.style.scale = 1;
-                }
-            } else {
-                // Desktop stacked position
-                const translateX = [-2, 0, 2][index];
-                const translateY = [-2, 0, 2][index];
-                const rotate = [-1, 0, 1][index];
-                card.style.transform = `translate(${translateX}%, ${translateY}%) rotate(${rotate}deg)`;
-                card.style.scale = 1;
-            }
-            
-            // Ensure current card is visible
-            if (index === currentCardIndex) {
-                card.style.zIndex = projectCards.length + 1;
-                card.style.opacity = 1;
-            } else {
-                card.style.zIndex = projectCards.length - Math.abs(index - currentCardIndex);
-                card.style.opacity = 1 - (Math.min(Math.abs(index - currentCardIndex), 3) * 0.2);
-            }
-        });
-        
-        activeCard = null;
-    }
-
-    function handleProjectCardClick(clickedCard) {
-        const clickedIndex = Array.from(projectCards).indexOf(clickedCard);
-        
-        // Update current index for mobile navigation
-        currentCardIndex = clickedIndex;
-        
-        // Update pagination dots if on mobile
         if (isMobile) {
-            const dots = document.querySelectorAll('.card-pagination-dot');
-            dots.forEach((dot, i) => {
-                dot.classList.toggle('active', i === clickedIndex);
-            });
-        }
-        
-        if (clickedCard === activeCard) {
-            activeCard = null;
-            projectsStack.classList.remove('has-active-card');
-            resetCards(isMobile);
+            // Mobile layout: Tighter vertical stack
+            const translateY = index * 8; // Reduced vertical offset for tighter stack
+            const scale = 1 - (index * 0.03); // Slightly increased scale difference
+            transformStyle = `translateY(${translateY}px) scale(${scale})`;
+            opacity = index < 4 ? 1 : Math.max(0, 1 - (index - 3) * 0.5); // Fade out cards after the 4th more quickly
         } else {
-            activeCard = clickedCard;
-            projectsStack.classList.add('has-active-card');
-            
-            projectCards.forEach((card) => {
-                if (card === clickedCard) {
-                    if (isMobile) {
-                        card.style.transform = 'translate(0%, 0%) scale(1.05)';
-                    } else {
-                        card.style.transform = 'translate(0%, -15%) rotate(0deg) scale(1.1)';
-                    }
-                    card.style.zIndex = 100;
-                } else {
-                    if (isMobile) {
-                        // Move other cards down on mobile
-                        const offset = Array.from(projectCards).indexOf(card) > clickedIndex ? 120 : -60;
-                        card.style.transform = `translate(0%, ${offset}%)`;
-                    } else {
-                        // Desktop spread
-                        const isLeft = Array.from(projectCards).indexOf(card) < clickedIndex;
-                        const xOffset = isLeft ? -40 : 40;
-                        const rotation = isLeft ? -15 : 15;
-                        card.style.transform = `translate(${xOffset}%, 5%) rotate(${rotation}deg)`;
-                    }
-                    card.style.zIndex = 1;
-                }
-            });
+            // Desktop layout: Fan out slightly
+            if (index < 3) { // Apply fan to top 3 cards
+                const angle = -5 + (index * 5); // Smaller angle range
+                const translateX = index * 5; // Slight horizontal offset
+                const translateY = index * 8; // Slight vertical offset
+                transformStyle = `translate(${translateX}px, ${translateY}px) rotate(${angle}deg) scale(1)`;
+            } else {
+                // Cards further back are stacked more tightly and faded
+                const baseTranslateY = 2 * 8;
+                const additionalTranslateY = (index - 2) * 5;
+                const translateY = baseTranslateY + additionalTranslateY;
+                const scale = Math.max(0.9, 1 - (index - 2) * 0.03);
+                transformStyle = `translate(${2 * 5}px, ${translateY}px) rotate(5deg) scale(${scale})`;
+                opacity = Math.max(0, 1 - (index - 2) * 0.35);
+            }
         }
+        card.style.transform = transformStyle;
+        card.style.opacity = opacity;
+        card.style.zIndex = zIndex;
     }
 
-    // Handle clicks outside the stack
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.projects-stack') && activeCard) {
-            resetCards(isMobile);
-        }
+    function updateProjectCards() {
+        projectCards = projectsStack.querySelectorAll('.project-card'); // Update node list
+        const cards = Array.from(projectCards);
+        const totalCards = cards.length;
+
+        cards.forEach((card, index) => {
+            // Apply transition for smooth updates (unless it's the card being reset)
+            if (card.style.transition === 'none') {
+                // If transition was 'none', apply the standard transition after a frame
+                requestAnimationFrame(() => {
+                    card.style.transition = 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                    applyCardStyle(card, index, totalCards);
+                });
+            } else {
+                card.style.transition = 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                applyCardStyle(card, index, totalCards);
+            }
+        });
+    }
+
+    // Navigation handlers
+    prevProjectBtn.addEventListener('click', () => cycleCards('prev'));
+    nextProjectBtn.addEventListener('click', () => cycleCards('next'));
+
+    // Initialize layout
+    updateProjectCards();
+
+    // Update layout on resize
+    window.addEventListener('resize', () => {
+        // No animation needed on resize, just reposition
+        projectCards.forEach(card => card.style.transition = 'none');
+        updateProjectCards();
+        // Re-enable transitions after a short delay
+        setTimeout(() => {
+             projectCards.forEach(card => card.style.transition = ''); // Reset to CSS default or previous value
+        }, 50);
     });
 
-    // Handle touch events outside the stack
-    document.addEventListener('touchend', (e) => {
-        if (!e.target.closest('.projects-stack') && activeCard) {
-            resetCards(isMobile);
+    // Add touch support
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    projectsStack.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    projectsStack.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    }, false);
+
+    function handleSwipe() {
+        const swipeThreshold = 50; // Minimum distance for a swipe
+        const diff = touchEndX - touchStartX;
+
+        if (Math.abs(diff) < swipeThreshold) return; // Not a swipe
+
+        if (diff > 0) { // Swiped right (towards previous)
+            cycleCards('prev');
+        } else { // Swiped left (towards next)
+            cycleCards('next');
         }
-    });
-    
-    // Create pagination dots for mobile
-    createPaginationDots();
+    }
 });
