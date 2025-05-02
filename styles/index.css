@@ -67,38 +67,17 @@ body {
     flex: 0 1 45%;
     position: relative;
     height: 400px;
-    perspective: 2000px; /* Increased perspective for better 3D effect */
-    pointer-events: auto; /* Enable pointer events on container */
-    z-index: 2; /* Ensure stack is above other hero elements */
+    perspective: 1000px;
+    pointer-events: auto;
+    z-index: 2;
     margin-top: 2rem;
-    padding: 3rem; /* Added padding to accommodate wider spread */
+    padding: 3rem;
     transform-style: preserve-3d;
-    min-height: 450px; /* Ensure enough space for the spread effect */
+    min-height: 400px;
     margin: 2rem 0;
-    touch-action: none; /* Prevent default touch actions on mobile */
-}
-
-/* Add swipe indicator for mobile devices */
-.projects-stack::after {
-    content: 'Tap to view projects';
-    position: absolute;
-    bottom: -25px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.85rem;
-    color: #78909c;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-    width: 100%;
-    text-align: center;
-}
-
-/* Only show the tap indicator on mobile */
-@media (max-width: 768px) {
-    .projects-stack:not(.is-spread):not(.has-active-card)::after {
-        opacity: 1;
-    }
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .project-card {
@@ -111,55 +90,30 @@ body {
     border: 1px solid #eaeaea;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
     transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                opacity 0.5s ease-out,
                 box-shadow 0.3s ease;
-    cursor: pointer;
+    cursor: default; /* Remove pointer cursor */
     transform-origin: center center;
-    will-change: transform;
-    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+    will-change: transform, opacity, z-index;
+    backface-visibility: hidden; /* Helps with animation smoothness */
+    -webkit-backface-visibility: hidden;
 }
 
-.project-card.active {
-    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-    z-index: 100 !important;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
-}
-
-.project-card.active h3 {
-    color: #007acc;
-    transform: scale(1.05);
-    transition: all 0.3s ease;
-}
-
-.project-card.active .project-type {
-    background: rgba(0, 122, 204, 0.15);
-}
-
+/* Remove hover styles completely */
 .project-card:not(.active):hover {
-    transform: translateY(-8px) scale(1.02) !important;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    transform: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
 /* Disable hover effect when a card is active */
 .project-card.active:hover {
-    transform: translate(0%, -10%) rotate(0deg) scale(1.05) !important;
-}
-
-/* Remove the specific card positioning styles since they're now handled by JS */
-.project-card:nth-child(1),
-.project-card:nth-child(2),
-.project-card:nth-child(3) {
     transform: none;
 }
 
 /* Update hover styles to not interfere with the spread effect */
-.project-card:hover {
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-}
-
-/* Update hover styles to only apply when not spread */
 .projects-stack:not(.is-spread):not(.has-active-card) .project-card:hover {
-    transform: translateY(-8px) scale(1.02) !important;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    transform: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
 /* Disable hover effects when spread */
@@ -240,17 +194,12 @@ body {
     opacity: 0.8;
     transition: all 0.3s ease;
     pointer-events: all !important;
+    cursor: pointer;
 }
 
 .project-link:hover {
     background: #007acc;
     color: #ffffff;
-    transform: translateY(-2px);
-}
-
-.project-card:hover .project-link {
-    transform: scale(1);
-    opacity: 1;
 }
 
 /* Typography */
@@ -420,6 +369,41 @@ body {
     opacity: 0.9;
 }
 
+/* Project navigation buttons */
+.projects-nav {
+    position: absolute;
+    bottom: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 20px;
+    z-index: 10;
+}
+
+.project-nav {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: #007acc;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 122, 204, 0.2);
+}
+
+.project-nav:hover {
+    background: #0056b3;
+    transform: translateY(-2px);
+}
+
+.project-nav:active {
+    transform: translateY(0);
+}
+
 /* Responsive design */
 @media (max-width: 1024px) {
     .container {
@@ -509,6 +493,7 @@ body {
         max-width: none;
         margin: 0;
         transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                    opacity 0.4s ease-out,
                     box-shadow 0.3s ease;
         will-change: transform;
         backface-visibility: hidden; /* Improve performance */
@@ -526,10 +511,10 @@ body {
 
     .projects-stack {
         height: auto;
-        min-height: 500px; /* Increased height for better card visibility */
+        min-height: 420px;
         perspective: 1000px; /* Add some perspective on mobile */
-        padding: 1rem;
-        margin: 2rem auto;
+        padding: 1rem 0.5rem;
+        margin: 1rem auto;
         overflow: visible; /* Make sure visual cues aren't cut off */
     }
 
@@ -559,31 +544,6 @@ body {
     .project-link {
         width: 44px; /* Larger touch target */
         height: 44px;
-    }
-
-    /* Add pagination dots for mobile card navigation */
-    .card-pagination {
-        display: flex;
-        justify-content: center;
-        margin-top: 20px;
-        gap: 6px;
-        position: absolute;
-        bottom: -30px;
-        left: 0;
-        right: 0;
-    }
-
-    .card-pagination-dot {
-        width: 8px;
-        height: 8px;
-        background-color: rgba(0, 122, 204, 0.2);
-        border-radius: 50%;
-        transition: all 0.3s ease;
-    }
-
-    .card-pagination-dot.active {
-        background-color: #007acc;
-        transform: scale(1.2);
     }
 }
 
@@ -643,8 +603,8 @@ body {
     }
     
     .projects-stack {
-        padding: 0.5rem 0.5rem 2rem 0.5rem; /* Add bottom padding for navigation dots */
-        min-height: 470px; /* Slightly increased to accommodate pagination */
+        padding: 0.5rem 0.5rem 1rem 0.5rem;
+        min-height: 400px;
     }
 
     /* Adjust card spacing for smaller screens */
