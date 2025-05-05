@@ -1,0 +1,286 @@
+/* Project Timeline Section - Adapted from timeline.css */
+.project-timeline {
+    padding: 6rem 0;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); /* Slightly different gradient */
+    min-height: 80vh; 
+    perspective: 1000px;
+    overflow-x: hidden;
+}
+
+.project-timeline-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    position: relative;
+}
+
+
+
+.project-timeline-intro {
+    max-width: 800px;
+    margin: 0 auto 4rem;
+    text-align: center;
+    padding: 0 1.5rem;
+}
+
+.project-timeline-intro h3 {
+    font-size: 1.8rem;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+}
+
+.project-timeline-intro p {
+    font-size: 1.1rem;
+    color: #546e7a;
+    line-height: 1.7;
+    margin-bottom: 1rem;
+}
+
+.project-timeline-items {
+    position: relative;
+    height: 450px; 
+    margin: 0 auto;
+    max-width: 600px; 
+}
+
+.project-timeline-item {
+    position: absolute;
+    width: 100%;
+    background: #ffffff;
+    padding: 2rem;
+    border-radius: 16px;
+    border: 1px solid #eaeaea;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center center;
+    backface-visibility: hidden;
+}
+
+.project-timeline-item:not(.active) {
+    pointer-events: none;
+}
+
+/* Project Specific Styles */
+.project-timeline-type {
+    display: inline-flex; /* Use flex for icon alignment */
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    background: rgba(0,122,204,0.1);
+    color: #007acc;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+.project-timeline-title {
+    font-size: 1.6rem; /* Slightly larger title */
+    color: #2c3e50;
+    font-weight: 700;
+    margin-bottom: 0.8rem;
+}
+
+.project-timeline-tech {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+
+
+.project-timeline-description {
+    font-size: 1.05rem;
+    color: #546e7a;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.project-timeline-link {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,122,204,0.08);
+    color: #007acc;
+    border-radius: 50%;
+    transform: scale(0.9);
+    opacity: 0.8;
+    transition: all 0.3s ease;
+    pointer-events: all !important;
+    cursor: pointer;
+}
+
+.project-timeline-link:hover {
+    background: #007acc;
+    color: #ffffff;
+    transform: scale(1);
+    opacity: 1;
+}
+
+.project-timeline-item:nth-child(1) { z-index: 4; }
+.project-timeline-item:nth-child(2) { z-index: 3; }
+.project-timeline-item:nth-child(3) { z-index: 2; }
+.project-timeline-item:nth-child(4) { z-index: 1; }
+
+.project-timeline-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.project-timeline-nav {
+    background: #ffffff;
+    border: 2px solid #007acc;
+    color: #007acc;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 122, 204, 0.1);
+}
+
+.project-timeline-nav:hover {
+    background: #007acc;
+    color: #ffffff;
+    transform: translateY(-2px);
+}
+
+.project-timeline-nav:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Mobile responsive design - Adapt from timeline.css */
+@media (max-width: 768px) {
+    .project-timeline {
+        padding: 4rem 0;
+    }
+
+    .project-timeline-container {
+        padding: 0 1.5rem;
+    }
+
+
+    .project-timeline-title {
+        font-size: 1.4rem;
+    }
+
+    .project-timeline-type {
+        font-size: 0.85rem;
+        padding: 0.4rem 1rem;
+    }
+
+    .project-timeline-description {
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    .project-timeline-nav {
+        width: 40px;
+        height: 40px;
+    }
+
+    .project-timeline-intro {
+        margin-bottom: 3rem;
+    }
+
+    .project-timeline-intro h3 {
+        font-size: 1.6rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .project-timeline-intro p {
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+
+    .project-timeline-items {
+        height: 420px; 
+        max-width: 90%; 
+    }
+
+     .project-timeline-item {
+        padding: 1.5rem;
+    }
+
+    .project-timeline-link {
+        width: 40px;
+        height: 40px;
+        top: 1rem;
+        right: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .project-timeline {
+        padding: 3rem 0;
+    }
+
+    .project-timeline-container {
+        padding: 0 1rem;
+    }
+
+
+    .project-timeline-title {
+        font-size: 1.2rem;
+    }
+
+    .project-timeline-type {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.8rem;
+    }
+
+    .project-timeline-description {
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    .project-timeline-controls {
+        margin-top: 1.5rem;
+    }
+
+    .project-timeline-nav {
+        width: 36px;
+        height: 36px;
+    }
+
+    .project-timeline-intro {
+        margin-bottom: 2.5rem;
+        padding: 0 1rem;
+    }
+
+    .project-timeline-intro h3 {
+        font-size: 1.4rem;
+        margin-bottom: 1rem;
+    }
+
+    .project-timeline-intro p {
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+     .project-timeline-items {
+        height: 400px;
+        max-width: 95%;
+    }
+     .project-timeline-item {
+        padding: 1.25rem;
+    }
+     .project-timeline-link {
+        width: 38px;
+        height: 38px;
+    }
+}
