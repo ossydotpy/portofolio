@@ -40,9 +40,9 @@
 
 .project-timeline-items {
     position: relative;
-    height: 450px; 
+    height: 400px; /* Match timeline */
     margin: 0 auto;
-    max-width: 600px; 
+    max-width: 800px; /* Match timeline */
 }
 
 .project-timeline-item {
@@ -53,6 +53,7 @@
     border-radius: 16px;
     border: 1px solid #eaeaea;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    /* Ensure transition matches timeline.css */
     transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     transform-origin: center center;
     backface-visibility: hidden;
