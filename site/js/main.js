@@ -1,280 +1,286 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- Existing Timeline Logic --- 
     const timelineItems = document.querySelectorAll('.timeline-item');
-    const prevButton = document.querySelector('.timeline-nav.prev');
-    const nextButton = document.querySelector('.timeline-nav.next');
-    let currentIndex = 0;
-    let isAnimating = false;
+    const prevTimelineButton = document.querySelector('.timeline-nav.prev');
+    const nextTimelineButton = document.querySelector('.timeline-nav.next');
+    let currentTimelineIndex = 0;
+    let isTimelineAnimating = false;
 
-    // Initialize positions
-    function initializeCards() {
+    function initializeTimelineCards() {
+        if (!timelineItems.length) return; // Exit if no timeline items
         timelineItems.forEach((item, index) => {
             item.style.transform = `translateY(${index * 20}px) scale(${1 - index * 0.05})`;
             item.style.opacity = 1 - (index * 0.2);
+            item.style.zIndex = timelineItems.length - index; // Ensure correct stacking order
         });
         timelineItems[0].classList.add('active');
-        updateNavigationButtons();
+        updateTimelineNavigationButtons();
     }
 
-    // Navigate to specific card
-    function navigateToCard(targetIndex) {
-        if (isAnimating || targetIndex === currentIndex) return;
+    function navigateTimelineToCard(targetIndex) {
+        if (isTimelineAnimating || targetIndex === currentTimelineIndex || !timelineItems.length) return;
         
-        isAnimating = true;
-        const direction = targetIndex > currentIndex ? 'forward' : 'backward';
+        isTimelineAnimating = true;
+        const direction = targetIndex > currentTimelineIndex ? 'forward' : 'backward';
         
         timelineItems.forEach((item, index) => {
             item.classList.remove('active');
-            
-            if (direction === 'forward') {
-                if (index < targetIndex) {
-                    item.style.transform = `translateX(-100%) translateY(${index * 20}px) scale(${1 - index * 0.05})`;
-                    item.style.opacity = 0;
-                } else {
-                    const offset = index - targetIndex;
-                    item.style.transform = `translateY(${offset * 20}px) scale(${1 - offset * 0.05})`;
-                    item.style.opacity = 1 - (offset * 0.2);
-                }
-            } else {
-                if (index < targetIndex) {
-                    item.style.transform = `translateX(-100%) translateY(${index * 20}px) scale(${1 - index * 0.05})`;
-                    item.style.opacity = 0;
-                } else {
-                    const offset = index - targetIndex;
-                    item.style.transform = `translateY(${offset * 20}px) scale(${1 - offset * 0.05})`;
-                    item.style.opacity = 1 - (offset * 0.2);
-                }
+            const offset = index - targetIndex;
+            const translateY = offset * 20;
+            const scale = 1 - Math.abs(offset * 0.05);
+            const opacity = Math.max(0, 1 - Math.abs(offset * 0.2));
+            const zIndex = timelineItems.length - Math.abs(offset);
+
+            let transform = `translateY(${translateY}px) scale(${scale})`;
+            let finalOpacity = opacity;
+
+            // Animate out the card that was previously active
+            if (index === currentTimelineIndex) {
+                transform = direction === 'forward' 
+                    ? `translateX(-100%) translateY(${translateY}px) scale(0.8)` 
+                    : `translateX(100%) translateY(${translateY}px) scale(0.8)`;
+                finalOpacity = 0;
             }
+            // Animate in the new active card
+            else if (index === targetIndex) {
+                 transform = `translateY(0px) scale(1)`;
+                 finalOpacity = 1;
+            }
+            // Position other cards
+            else {
+                 transform = `translateY(${translateY}px) scale(${scale})`;
+                 finalOpacity = opacity;
+            }
+
+            item.style.transform = transform;
+            item.style.opacity = finalOpacity;
+            item.style.zIndex = zIndex;
         });
 
         timelineItems[targetIndex].classList.add('active');
-        currentIndex = targetIndex;
-        updateNavigationButtons();
+        currentTimelineIndex = targetIndex;
+        updateTimelineNavigationButtons();
 
-        // Reset animation flag after transition
         setTimeout(() => {
-            isAnimating = false;
-        }, 600);
-    }
-
-    // Update navigation button states
-    function updateNavigationButtons() {
-        prevButton.disabled = currentIndex === 0;
-        nextButton.disabled = currentIndex === timelineItems.length - 1;
-    }
-
-    // Button click handlers
-    prevButton.addEventListener('click', () => {
-        if (currentIndex > 0) {
-            navigateToCard(currentIndex - 1);
-        }
-    });
-
-    nextButton.addEventListener('click', () => {
-        if (currentIndex < timelineItems.length - 1) {
-            navigateToCard(currentIndex + 1);
-        }
-    });
-
-    // Initialize
-    initializeCards();
-
-    // Add keyboard navigation
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowLeft' && !prevButton.disabled) {
-            navigateToCard(currentIndex - 1);
-        } else if (e.key === 'ArrowRight' && !nextButton.disabled) {
-            navigateToCard(currentIndex + 1);
-        }
-    });
-
-    // Projects Stack Initialization
-    const projectsStack = document.querySelector('.projects-stack');
-    let projectCards = document.querySelectorAll('.project-card'); // Use let to allow reassignment
-    const prevProjectBtn = projectsStack.querySelector('.project-nav.prev');
-    const nextProjectBtn = projectsStack.querySelector('.project-nav.next');
-    let isProjectAnimating = false; // Renamed to avoid conflict
-
-    function cycleCards(direction) {
-        if (isProjectAnimating) return;
-        isProjectAnimating = true;
-
-        projectCards = projectsStack.querySelectorAll('.project-card'); // Update node list
-        const cards = Array.from(projectCards);
-        const transitionDuration = 500; // ms, match CSS
-        const isMobile = window.innerWidth <= 768;
-
-        if (direction === 'next') {
-            if (cards.length < 2) { // Need at least 2 cards to cycle
-                isProjectAnimating = false;
-                return;
-            }
-            const firstCard = cards[0];
-
-            // Animate the top card flying off
-            firstCard.style.transition = `transform ${transitionDuration / 1000}s cubic-bezier(0.4, 0.0, 0.2, 1), opacity ${transitionDuration / 1000}s ease-out`;
-            // Adjust animation for mobile vs desktop
-            const flyOffTransform = isMobile
-                ? 'translateX(100%) translateY(10px) rotate(10deg) scale(0.85)' // Less horizontal, slight vertical
-                : 'translateX(150%) translateY(20px) rotate(15deg) scale(0.8)'; // Original desktop
-            firstCard.style.transform = flyOffTransform;
-            firstCard.style.opacity = '0';
-            firstCard.style.zIndex = '-1';
-
-            // Shift remaining cards up smoothly
-            cards.slice(1).forEach((card, index) => {
-                card.style.transition = `all ${transitionDuration / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`;
-                applyCardStyle(card, index, cards.length - 1);
+            isTimelineAnimating = false;
+            // Re-apply final styles without transition for stability
+            timelineItems.forEach((item, index) => {
+                 const offset = index - currentTimelineIndex;
+                 item.style.transition = 'none'; // Temporarily disable transition
+                 item.style.transform = `translateY(${offset * 20}px) scale(${1 - Math.abs(offset * 0.05)})`;
+                 item.style.opacity = Math.max(0, 1 - Math.abs(offset * 0.2));
+                 item.style.zIndex = timelineItems.length - Math.abs(offset);
+                 if(index === currentTimelineIndex) {
+                    item.style.transform = 'translateY(0px) scale(1)';
+                    item.style.opacity = 1;
+                    item.style.zIndex = timelineItems.length + 1;
+                 }
+                 // Force reflow to apply styles immediately
+                 void item.offsetWidth;
+                 item.style.transition = ''; // Re-enable transitions
             });
+             timelineItems[currentTimelineIndex].classList.add('active');
 
-            // After the animation completes
-            setTimeout(() => {
-                // Move the card element to the end of the stack in the DOM
-                projectsStack.appendChild(firstCard);
-
-                // Reset styles for the moved card (now last) without transition
-                firstCard.style.transition = 'none';
-                firstCard.style.opacity = '1';
-
-                // Update all card positions/styles based on the new order
-                updateProjectCards();
-
-                // Allow new animations after a short delay
-                setTimeout(() => {
-                    isProjectAnimating = false;
-                }, 50); // Small buffer
-
-            }, transitionDuration);
-
-        } else { // direction === 'prev'
-            if (cards.length < 2) { // Need at least 2 cards to cycle back
-                isProjectAnimating = false;
-                return;
-            }
-            const lastCard = cards[cards.length - 1];
-
-            // Instantly move the last card element to the beginning of the stack in the DOM
-            projectsStack.insertBefore(lastCard, cards[0]);
-
-            // Position the new first card off-screen (left/top) without transition, ready to animate in
-            lastCard.style.transition = 'none';
-            // Adjust animation for mobile vs desktop
-            const flyOnTransform = isMobile
-                ? 'translateX(-100%) translateY(10px) rotate(-10deg) scale(0.85)' // Less horizontal, slight vertical
-                : 'translateX(-150%) translateY(20px) rotate(-15deg) scale(0.8)'; // Original desktop
-            lastCard.style.transform = flyOnTransform;
-            lastCard.style.opacity = '0';
-            lastCard.style.zIndex = cards.length + 1; // Ensure it's on top initially
-
-            // Force reflow/repaint to apply the initial off-screen style before animating
-            void lastCard.offsetWidth;
-
-            // Update all card positions smoothly, animating the new first card into view
-            // and shifting others down. This applies the correct transitions and final styles.
-            updateProjectCards();
-
-            // Allow new animations after the transition duration
-            setTimeout(() => {
-                isProjectAnimating = false;
-            }, transitionDuration);
-        }
+        }, 600); // Match CSS transition duration
     }
 
-    // Helper function to apply styles based on index
-    function applyCardStyle(card, index, totalCards) {
-        const isMobile = window.innerWidth <= 768;
-        let transformStyle = '';
-        let opacity = 1;
-        const zIndex = totalCards - index;
-
-        if (isMobile) {
-            // Mobile layout: Tighter vertical stack
-            const translateY = index * 8; // Reduced vertical offset for tighter stack
-            const scale = 1 - (index * 0.03); // Slightly increased scale difference
-            transformStyle = `translateY(${translateY}px) scale(${scale})`;
-            opacity = index < 4 ? 1 : Math.max(0, 1 - (index - 3) * 0.5); // Fade out cards after the 4th more quickly
-        } else {
-            // Desktop layout: Fan out slightly
-            if (index < 3) { // Apply fan to top 3 cards
-                const angle = -5 + (index * 5); // Smaller angle range
-                const translateX = index * 5; // Slight horizontal offset
-                const translateY = index * 8; // Slight vertical offset
-                transformStyle = `translate(${translateX}px, ${translateY}px) rotate(${angle}deg) scale(1)`;
-            } else {
-                // Cards further back are stacked more tightly and faded
-                const baseTranslateY = 2 * 8;
-                const additionalTranslateY = (index - 2) * 5;
-                const translateY = baseTranslateY + additionalTranslateY;
-                const scale = Math.max(0.9, 1 - (index - 2) * 0.03);
-                transformStyle = `translate(${2 * 5}px, ${translateY}px) rotate(5deg) scale(${scale})`;
-                opacity = Math.max(0, 1 - (index - 2) * 0.35);
-            }
-        }
-        card.style.transform = transformStyle;
-        card.style.opacity = opacity;
-        card.style.zIndex = zIndex;
+    function updateTimelineNavigationButtons() {
+        if (!prevTimelineButton || !nextTimelineButton) return;
+        prevTimelineButton.disabled = currentTimelineIndex === 0;
+        nextTimelineButton.disabled = currentTimelineIndex === timelineItems.length - 1;
     }
 
-    function updateProjectCards() {
-        projectCards = projectsStack.querySelectorAll('.project-card'); // Update node list
-        const cards = Array.from(projectCards);
-        const totalCards = cards.length;
+    if (prevTimelineButton && nextTimelineButton) {
+        prevTimelineButton.addEventListener('click', () => {
+            if (currentTimelineIndex > 0) {
+                navigateTimelineToCard(currentTimelineIndex - 1);
+            }
+        });
 
-        cards.forEach((card, index) => {
-            // Apply transition for smooth updates (unless it's the card being reset)
-            if (card.style.transition === 'none') {
-                // If transition was 'none', apply the standard transition after a frame
-                requestAnimationFrame(() => {
-                    card.style.transition = 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
-                    applyCardStyle(card, index, totalCards);
-                });
-            } else {
-                card.style.transition = 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
-                applyCardStyle(card, index, totalCards);
+        nextTimelineButton.addEventListener('click', () => {
+            if (currentTimelineIndex < timelineItems.length - 1) {
+                navigateTimelineToCard(currentTimelineIndex + 1);
             }
         });
     }
 
-    // Navigation handlers
-    prevProjectBtn.addEventListener('click', () => cycleCards('prev'));
-    nextProjectBtn.addEventListener('click', () => cycleCards('next'));
+    // Initialize Timeline
+    initializeTimelineCards();
 
-    // Initialize layout
-    updateProjectCards();
+    // --- NEW Project Timeline Logic (Adapted from old project stack logic) ---
+    const projectTimeline = document.querySelector('.project-timeline'); // Container
+    const projectTimelineItemsContainer = projectTimeline?.querySelector('.project-timeline-items');
+    const prevProjectTimelineBtn = projectTimeline?.querySelector('.project-timeline-nav.prev');
+    const nextProjectTimelineBtn = projectTimeline?.querySelector('.project-timeline-nav.next');
+    let projectTimelineItems = projectTimelineItemsContainer?.querySelectorAll('.project-timeline-item');
+    let currentProjectIndex = 0;
+    let isProjectTimelineAnimating = false;
 
-    // Update layout on resize
-    window.addEventListener('resize', () => {
-        // No animation needed on resize, just reposition
-        projectCards.forEach(card => card.style.transition = 'none');
-        updateProjectCards();
-        // Re-enable transitions after a short delay
-        setTimeout(() => {
-             projectCards.forEach(card => card.style.transition = ''); // Reset to CSS default or previous value
-        }, 50);
-    });
+    function initializeProjectCards() {
+        if (!projectTimelineItems || projectTimelineItems.length === 0) return; // Exit if no project items
+        projectTimelineItems.forEach((item, index) => {
+            applyProjectCardStyle(item, index, projectTimelineItems.length);
+            item.style.transition = 'none'; // Apply initial styles without animation
+        });
+        // Force reflow
+        if (projectTimelineItemsContainer) void projectTimelineItemsContainer.offsetWidth;
+        // Re-enable transitions
+        projectTimelineItems.forEach(item => item.style.transition = '');
 
-    // Add touch support
-    let touchStartX = 0;
-    let touchEndX = 0;
-
-    projectsStack.addEventListener('touchstart', (e) => {
-        touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true });
-
-    projectsStack.addEventListener('touchend', (e) => {
-        touchEndX = e.changedTouches[0].screenX;
-        handleSwipe();
-    }, false);
-
-    function handleSwipe() {
-        const swipeThreshold = 50; // Minimum distance for a swipe
-        const diff = touchEndX - touchStartX;
-
-        if (Math.abs(diff) < swipeThreshold) return; // Not a swipe
-
-        if (diff > 0) { // Swiped right (towards previous)
-            cycleCards('prev');
-        } else { // Swiped left (towards next)
-            cycleCards('next');
-        }
+        if (projectTimelineItems[0]) projectTimelineItems[0].classList.add('active');
+        updateProjectNavigationButtons();
     }
+
+    function cycleProjectCards(direction) {
+        if (isProjectTimelineAnimating || !projectTimelineItems || projectTimelineItems.length < 2) {
+            isProjectTimelineAnimating = false; 
+            return;
+        }
+        isProjectTimelineAnimating = true;
+
+        const cards = Array.from(projectTimelineItems);
+        const transitionDuration = 600; // ms, match CSS
+        const currentCard = cards[currentProjectIndex];
+        let targetIndex;
+
+        // Determine target index
+        if (direction === 'next') {
+            targetIndex = (currentProjectIndex + 1) % cards.length;
+        } else { // direction === 'prev'
+            targetIndex = (currentProjectIndex - 1 + cards.length) % cards.length;
+        }
+        const targetCard = cards[targetIndex];
+
+        // 1. Animate the current card flying off
+        currentCard.style.transition = `all ${transitionDuration / 1000}s cubic-bezier(0.4, 0.0, 0.2, 1)`;
+        if (direction === 'next') {
+            currentCard.style.transform = `translateX(100%) translateY(20px) rotate(10deg) scale(0.8)`;
+        } else {
+            currentCard.style.transform = `translateX(-100%) translateY(20px) rotate(-10deg) scale(0.8)`;
+        }
+        currentCard.style.opacity = '0';
+        currentCard.classList.remove('active');
+
+        // 2. Prepare and animate the target card and others
+        cards.forEach((card, index) => {
+            // Skip the card that is flying off
+            if (index === currentProjectIndex) return;
+
+            const offset = (index - targetIndex + cards.length) % cards.length;
+            
+            // Ensure transition is set for all moving cards
+            card.style.transition = `all ${transitionDuration / 1000}s cubic-bezier(0.4, 0, 0.2, 1)`;
+
+            // Apply the final style for the target position
+            applyProjectCardStyle(card, offset, cards.length);
+
+            if (index === targetIndex) {
+                card.classList.add('active');
+            } else {
+                card.classList.remove('active');
+            }
+        });
+
+        currentProjectIndex = targetIndex;
+        updateProjectNavigationButtons();
+
+        // Reset animation flag after transition
+        setTimeout(() => {
+            isProjectTimelineAnimating = false;
+            // Optional: Stabilize final positions without transition
+            projectTimelineItems?.forEach((item, index) => {
+                 const offset = (index - currentProjectIndex + cards.length) % cards.length;
+                 item.style.transition = 'none'; 
+                 // Re-apply the style calculated by applyProjectCardStyle
+                 const translateY = offset * 20;
+                 const scale = Math.max(0, 1 - (offset * 0.05));
+                 const opacity = Math.max(0, 1 - (offset * 0.2));
+                 const zIndex = cards.length - offset;
+                 let transform = `translateY(${translateY}px) scale(${scale})`;
+                 let finalOpacity = opacity;
+                 if (offset === 0) {
+                     transform = `translateY(0px) scale(1)`;
+                     finalOpacity = 1;
+                 }
+                 // Ensure the card that flew off is properly hidden and reset
+                 if (item === currentCard && index !== currentProjectIndex) { 
+                     // It might have been reset by the loop, ensure it's out
+                     // Or reset its position if it's needed back in the stack later
+                     // For simplicity, let's just ensure its final state is correct based on its *new* offset
+                 }
+
+                 item.style.transform = transform;
+                 item.style.opacity = finalOpacity;
+                 item.style.zIndex = zIndex;
+                 
+                 void item.offsetWidth; // Force reflow
+                 item.style.transition = ''; // Re-enable transitions
+            });
+            if(projectTimelineItems && projectTimelineItems[currentProjectIndex]) {
+                projectTimelineItems[currentProjectIndex].classList.add('active');
+            }
+        }, transitionDuration);
+    }
+
+    // Helper function to apply styles based on index relative to the active card
+    function applyProjectCardStyle(card, offset, totalCards) {
+        const translateY = offset * 20; // Vertical offset for stacking
+        const scale = Math.max(0, 1 - (offset * 0.05)); // Scale down further cards
+        const opacity = Math.max(0, 1 - (offset * 0.2)); // Fade out further cards
+        const zIndex = totalCards - offset; // Active card has highest z-index
+
+        let transform = `translateY(${translateY}px) scale(${scale})`;
+        let finalOpacity = opacity;
+
+        if (offset === 0) { // Style for the active card
+            transform = `translateY(0px) scale(1)`;
+            finalOpacity = 1;
+        }
+
+        card.style.transform = transform;
+        card.style.opacity = finalOpacity;
+        card.style.zIndex = zIndex;
+    }
+
+    function updateProjectNavigationButtons() {
+        if (!prevProjectTimelineBtn || !nextProjectTimelineBtn || !projectTimelineItems || projectTimelineItems.length <= 1) {
+             if(prevProjectTimelineBtn) prevProjectTimelineBtn.style.display = 'none';
+             if(nextProjectTimelineBtn) nextProjectTimelineBtn.style.display = 'none';
+            return; // No navigation needed for 0 or 1 card
+        }
+         if(prevProjectTimelineBtn) prevProjectTimelineBtn.style.display = 'flex';
+         if(nextProjectTimelineBtn) nextProjectTimelineBtn.style.display = 'flex';
+        // In a cycling setup, buttons are never truly disabled
+        prevProjectTimelineBtn.disabled = false;
+        nextProjectTimelineBtn.disabled = false;
+    }
+
+    // Navigation handlers for Project Timeline
+    if (prevProjectTimelineBtn && nextProjectTimelineBtn) {
+        prevProjectTimelineBtn.addEventListener('click', () => cycleProjectCards('prev'));
+        nextProjectTimelineBtn.addEventListener('click', () => cycleProjectCards('next'));
+    }
+
+    // Initialize Project Cards
+    initializeProjectCards();
+
+    // Add keyboard navigation for both sections (optional, ensure focus management)
+    document.addEventListener('keydown', (e) => {
+        // Check if focus is within the timeline section
+        if (document.activeElement && document.activeElement.closest('.timeline')) {
+            if (e.key === 'ArrowLeft' && prevTimelineButton && !prevTimelineButton.disabled) {
+                navigateTimelineToCard(currentTimelineIndex - 1);
+            } else if (e.key === 'ArrowRight' && nextTimelineButton && !nextTimelineButton.disabled) {
+                navigateTimelineToCard(currentTimelineIndex + 1);
+            }
+        }
+        // Check if focus is within the project timeline section
+        else if (document.activeElement && document.activeElement.closest('.project-timeline')) {
+             if (e.key === 'ArrowLeft' && prevProjectTimelineBtn) {
+                cycleProjectCards('prev');
+            } else if (e.key === 'ArrowRight' && nextProjectTimelineBtn) {
+                cycleProjectCards('next');
+            }
+        }
+    });
 });
